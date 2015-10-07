@@ -7,15 +7,58 @@ namespace Irc
 {
     public class IrcMessage
     {
-        public string Prefix;
-        public string Command;
-        public string[] Parameters;
-        public string Extra;
+        /*
+         * <message>       ::= ['@' <tags> <SPACE>] [':' <prefix> <SPACE> ] <command> <params> <crlf>
+         * <tags>          ::= <tag> [';' <tag>]*
+         * <tag>           ::= <key> ['=' <escaped value>]
+         * <key>           ::= [ <vendor> '/' ] <sequence of letters, digits, hyphens (`-`)>
+         * <escaped value> ::= <sequence of any characters except NUL, CR, LF, semicolon (`;`) and SPACE>
+         * <vendor>        ::= <host>
+         * 
+         * @aaa=bbb;ccc;example.com/ddd=eee :nick!ident@host.com PRIVMSG me :Hello world
+         */
+
+
+        public string Prefix = string.Empty;
+        public string Command = string.Empty;
+        public string[] Parameters = new string[]{ };
+        public Dictionary<string, string> Tags = new Dictionary<string,string>();
+
+        public static readonly char[] TAG_SEPARATOR = new char[] { ';' };
 
         public IrcMessage(string message_)
         {
-            // Thanks to 
             string message = message_;
+            if (message.StartsWith("@")) // We have tags
+            {
+                int next_space = message.IndexOf(' ');
+
+                // We grab the tags
+                string tags = message.Substring(1, next_space-1);
+
+                // We cut the message remaining part
+                message = message.Substring(next_space + 1);
+                
+                // Listring the tags
+                string[] split = tags.Split(TAG_SEPARATOR);
+
+                foreach (string tag in split)
+                {
+                    int separator = tag.IndexOf('=');
+                    if (separator == -1)
+                    {
+                        Tags.Add(UnescapeTag(tag), string.Empty);
+                        continue;
+                    }
+                    int length = tag.Length;
+                    string key = tag.Substring(0, separator);
+                    string value = string.Empty;
+                    if (length > separator + 1)
+                        value = tag.Substring(separator + 1);
+                    Tags.Add(UnescapeTag(key), UnescapeTag(value));
+                }
+            }
+
             int prefixEnd = -1, trailingStart = message.Length;
             string trailing = null;
             Prefix = Command = String.Empty;
@@ -28,22 +71,6 @@ namespace Irc
             {
                 prefixEnd = message.IndexOf(" ");
                 Prefix = message.Substring(1, prefixEnd - 1);
-            }
-            else
-            {
-                // Message didn't started with ":", let's try to find one
-                int extra = message.IndexOf(" :");
-                if (extra > -1)
-                {
-                    Extra = message.Substring(0, extra-1);
-                    message = message.Substring(extra + 1);
-                    prefixEnd = message.IndexOf(" ");
-                    Prefix = message.Substring(1, prefixEnd - 1);
-                }
-                else
-                {
-                    return; // Not an IRC message
-                }
             }
 
             // Grab the trailing if it is present. If a message contains
@@ -73,13 +100,38 @@ namespace Irc
                 Parameters = Parameters.Concat(new string[] { trailing }).ToArray();
         }
 
+        /*
+         * Character        Sequence in <escaped value>
+         * ; (semicolon)    \: (backslash and colon)
+         * SPACE            \s
+         * \                \\
+         * CR               \r
+         * LF               \n
+         * all others       the character itself
+         */
+
+        public string UnescapeTag(string tag)
+        {
+            return tag
+                .Replace(@"\:", ";")
+                .Replace(@"\s", " ")
+                .Replace(@"\\", @"\")
+                .Replace(@"\r", "\r")
+                .Replace(@"\n", "\n");
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendFormat("[{0}] [{1}] [", Prefix, Command);
+            sb.AppendFormat("Pre [{0}] Com [{1}] Param [", Prefix, Command);
             foreach (string s in Parameters)
             {
                 sb.AppendFormat("{0},", s);
+            }
+            sb.Append("] Tags [");
+            foreach (KeyValuePair<string, string> kp in Tags)
+            {
+                sb.AppendFormat("{0} = {1},", kp.Key, kp.Value);
             }
             sb.AppendLine("]");
             return sb.ToString();

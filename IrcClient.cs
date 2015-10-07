@@ -442,7 +442,7 @@ namespace Irc
 
                 if (OnPrivateMessage != null)
                 {
-                    OnPrivateMessage(this, new IrcClientOnPrivateMessageEventArgs(msg, nick, userid, userhost, channel, isforme, message.Extra));
+                    OnPrivateMessage(this, new IrcClientOnPrivateMessageEventArgs(msg, nick, userid, userhost, channel, isforme, message.Tags));
                 }
             }
         }

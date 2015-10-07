@@ -35,8 +35,9 @@ namespace Irc
         public string Message;
         public string Channel;
         public bool IsToMe;
-        public string Extra;
-        public IrcClientOnPrivateMessageEventArgs(string message, string name, string userid, string userhost, string channel, bool isToMe, string extra)
+        public Dictionary<string, string> Tags;
+        public IrcClientOnPrivateMessageEventArgs(string message, string name, string userid, string userhost,
+            string channel, bool isToMe, Dictionary<string, string> tags)
         {
             UserID = userid;
             Message = message;
@@ -44,7 +45,7 @@ namespace Irc
             Userhost = userhost;
             Channel = channel;
             IsToMe = isToMe;
-            Extra = extra;
+            Tags = tags;
         }
         public override string ToString()
         {
