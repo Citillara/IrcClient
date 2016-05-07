@@ -49,7 +49,7 @@ namespace Irc
         public delegate void IrcClientOnChannelNickListReceivedEventHandler(IrcClient sender, IrcClientOnChannelNickListReceivedEventArgs args);
         public event IrcClientOnChannelNickListReceivedEventHandler OnChannelNickListRecived;
 
-        public delegate void IrcClientOnUnknownCommandEventHandler(IrcClient sender, string message);
+        public delegate void IrcClientOnUnknownCommandEventHandler(IrcClient sender, IrcMessage message);
         public event IrcClientOnUnknownCommandEventHandler OnUnknownCommand;
 
 
@@ -376,6 +376,7 @@ namespace Irc
                     case "422": // No MOTD
                         Perform();
                         break;
+                    case "WHISPER":
                     case "PRIVMSG": // Private message
                         RcvPrivMsg(_message);
                         break;
@@ -398,7 +399,7 @@ namespace Irc
                         break;
                     default : // Unknown command
                         if (OnUnknownCommand != null)
-                            OnUnknownCommand(this, message);
+                            OnUnknownCommand(this, _message);
                         break;
                 }
             }
