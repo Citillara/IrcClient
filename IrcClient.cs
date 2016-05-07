@@ -221,6 +221,10 @@ namespace Irc
                 System.Diagnostics.Debugger.Break();
                 ExceptionState(e);
             }
+            catch (Exception e)
+            {
+                ExceptionState(e);
+            }
             finally
             {
                 this.Close();
