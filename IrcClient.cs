@@ -52,6 +52,8 @@ namespace Irc
         public delegate void IrcClientOnUnknownCommandEventHandler(IrcClient sender, IrcMessage message);
         public event IrcClientOnUnknownCommandEventHandler OnUnknownCommand;
 
+        public delegate void IrcClientOnDisconnectEventHandler(IrcClient sender, bool wasManualDisconnect);
+        public event IrcClientOnDisconnectEventHandler OnDisconnect;
 
         public delegate void DebugEventHandler(int debug);
         public event DebugEventHandler OnDebug;
@@ -73,6 +75,9 @@ namespace Irc
         public string Password = "";
         private const string Version = "Citillara IRC library public experimental version 0.1";
 
+        private bool manualDisconnect = false;
+        private bool hasBeenDisconnected = false;
+
         // Public get only variables
         private bool Connected;
         public bool IsConnected { get { return Connected; } }
@@ -81,10 +86,6 @@ namespace Irc
         // Settings
         private string myNickname;
         public MessageLevel LogLevel = MessageLevel.Debug;
-        public bool RetryConnection = false;
-        private bool shouldRetryConnection = false;
-        public int RetryConnectionAttemps = 3;
-        private int numberOfReconnectAttempts = 0;
 
         // Constructor
         public IrcClient(string host, int port, string nick)
@@ -100,22 +101,11 @@ namespace Irc
             myNickname = nick;
             usingIP = true;
         }
-
-        private void Reconnect()
-        {
-            if (!shouldRetryConnection || numberOfReconnectAttempts > RetryConnectionAttemps)
-            {
-                return;
-            }
-            else
-            {
-                numberOfReconnectAttempts++;
-                Connect();
-            }
-        }
-
+        
         public void Connect()
         {
+            if (hasBeenDisconnected)
+                throw new Exception("Cannot reconnect after a disconnection. Create a new instance of the class");
             try
             {
                 //IrcIdentServer.Start(myNickname, 30);
@@ -127,10 +117,10 @@ namespace Irc
                     myClient.Connect(myHost, myPort);
                 Log("IRC client connected", MessageLevel.Info);
                 myNetworkStream = myClient.GetStream();
+                myNetworkStream.ReadTimeout = 6 * 60 * 1000;
                 myWriter = new StreamWriter(myNetworkStream);
                 myReader = new StreamReader(myNetworkStream);
                 Connected = true;
-                numberOfReconnectAttempts = 0;
                 if (myMessageManagerThread != null)
                     myMessageManagerThread.Abort();
                 if (myListenerThread != null && myListenerThread.IsAlive)
@@ -233,9 +223,8 @@ namespace Irc
 
         public void Disconnect()
         {
-            shouldRetryConnection = false;
+            manualDisconnect = true;
             Close();
-            shouldRetryConnection = RetryConnection;
         }
 
         private void Close()
@@ -262,6 +251,12 @@ namespace Irc
             finally
             {
                 this.Log("IRC client closing", MessageLevel.Info);
+                if (this.OnDisconnect != null && !hasBeenDisconnected)
+                {
+                    hasBeenDisconnected = true;
+                    OnDisconnect(this, manualDisconnect);
+                }
+                hasBeenDisconnected = true;
             }
         }
         private void ExceptionState(Exception e)
