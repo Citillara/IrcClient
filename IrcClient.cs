@@ -20,7 +20,8 @@ namespace Irc
         private static readonly byte CR = 0x0D;
         private static readonly byte LF = 0x0A;
         private static readonly int BUFFER_SIZE = 16384;
-        private static readonly int TIME_WAIT = 50; // Threads waiting time when no work is due
+        private static readonly int TIME_WAIT = 200; // Threads waiting time when no work is due
+        public static readonly string Version = "1";
         
         // Events
         public delegate void IrcClientOnPrivateMessageEventHandler(IrcClient sender, IrcClientOnPrivateMessageEventArgs args);
@@ -73,7 +74,7 @@ namespace Irc
         private ManualResetEvent idleListener;
 
         public string Password = "";
-        private const string Version = "Citillara IRC library public experimental version 0.1";
+        private const string VersionString = "Citillara IRC library public experimental version 0.1";
 
         private bool manualDisconnect = false;
         private bool hasBeenDisconnected = false;
@@ -503,7 +504,7 @@ namespace Irc
                 switch (s[0])
                 {
                     case "VERSION":
-                        SendLine("NOTICE {0} :{1}VERSION {2}{1}", sender, (char)0x01, Version);
+                        SendLine("NOTICE {0} :{1}VERSION {2}{1}", sender, (char)0x01, VersionString);
                         break;
                     case "PING":
                         if(s.Length > 1)
