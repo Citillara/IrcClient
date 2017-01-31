@@ -21,7 +21,7 @@ namespace Irc
         private static readonly byte LF = 0x0A;
         private static readonly int BUFFER_SIZE = 16384;
         private static readonly int TIME_WAIT = 200; // Threads waiting time when no work is due
-        public static readonly string Version = "1";
+        public static readonly string Version = "2";
         
         // Events
         public delegate void IrcClientOnPrivateMessageEventHandler(IrcClient sender, IrcClientOnPrivateMessageEventArgs args);
@@ -334,7 +334,6 @@ namespace Irc
         // Misc
         Dictionary<string, List<string>> channelNickList = new Dictionary<string, List<string>>();
 
-
         private void MessageManager(string message)
         {
             Log(message, MessageLevel.Debug);
@@ -400,9 +399,6 @@ namespace Irc
                 }
             }
         }
-
-
-
 
         private bool didPerformOnce = false;
         private void Perform()
