@@ -21,7 +21,7 @@ namespace Irc
         private static readonly byte LF = 0x0A;
         private static readonly int BUFFER_SIZE = 16384;
         private static readonly int TIME_WAIT = 200; // Threads waiting time when no work is due
-        public static readonly string Version = "2";
+        public static readonly string Version = "3";
         
         // Events
         public delegate void IrcClientOnPrivateMessageEventHandler(IrcClient sender, IrcClientOnPrivateMessageEventArgs args);
@@ -69,12 +69,13 @@ namespace Irc
         private StreamReader myReader;
         private Thread myListenerThread;
         private Thread myMessageManagerThread;
+        private Thread myPingerThread;
         private DateTime myStartTime;
         private bool usingIP = false;
         private ManualResetEvent idleListener;
 
         public string Password = "";
-        private const string VersionString = "Citillara IRC library public experimental version 0.1";
+        private const string VersionString = "Citillara IRC Client library 0.3 - Check Github for support";
 
         private bool manualDisconnect = false;
         private bool hasBeenDisconnected = false;
@@ -87,6 +88,8 @@ namespace Irc
         // Settings
         private string myNickname;
         public MessageLevel LogLevel = MessageLevel.Debug;
+        public bool PingServer = false;
+        public int PingServerDelay = 45;
 
         // Constructor
         public IrcClient(string host, int port, string nick)
