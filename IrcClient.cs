@@ -225,6 +225,9 @@ namespace Irc
             }
         }
 
+        /// <summary>
+        /// Disconnects the client and close all connection. Cannot be reused afterwards
+        /// </summary>
         public void Disconnect()
         {
             manualDisconnect = true;
@@ -689,6 +692,7 @@ namespace Irc
 
         public bool LogEnabled = true;
         public bool LogToConsole = true;
+        public bool LogIncludeTimestamp = true;
         private void Log(string message, MessageLevel level)
         {
             if (LogEnabled)
@@ -697,13 +701,19 @@ namespace Irc
                 {
                     if (LogToConsole)
                     {
-                        Console.WriteLine(message);
+                        if (LogIncludeTimestamp)
+                            Console.WriteLine(string.Concat("[", DateTime.Now.ToString(), "] ", message));
+                        else
+                            Console.WriteLine(message);
                     }
                     else
                     {
                         if (OnLog != null)
                         {
-                            OnLog(this, new IrcClientOnLogEventArgs(message, level));
+                            if(LogIncludeTimestamp)
+                                OnLog(this, new IrcClientOnLogEventArgs(string.Concat("[", DateTime.Now.ToString(), "] ", message), level));
+                            else
+                                OnLog(this, new IrcClientOnLogEventArgs(message, level));
                         }
                     }
                 }
