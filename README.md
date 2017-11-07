@@ -1,4 +1,7 @@
 # IrcClient
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e60eeb81012d48a5907a949c11694ae4)](https://www.codacy.com/app/Citillara/IrcClient?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Citillara/IrcClient&amp;utm_campaign=Badge_Grade)
+
 C# .NET Library for an IRC client
 
 This library is my first serious attempt to write something from scratch.
