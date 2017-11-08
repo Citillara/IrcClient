@@ -11,11 +11,11 @@ namespace Irc
 {
     public static class IrcIdentServer
     {
-        static public int Port = 113;
+        static private readonly int port = 113;
         static public string UserName;
         static public int Timeout;
         static private ManualResetEvent CanStart = new ManualResetEvent(false);
-        static private bool doOnce = false;
+        static private bool doOnce;
         static public void Start(string username, int timeout)
         {
             Timeout = timeout;
@@ -38,7 +38,7 @@ namespace Irc
             {
                 Thread.CurrentThread.Name = "Ident server";
                 int timeout = 0;
-                TcpListener t = new TcpListener(IPAddress.Any, Port);
+                TcpListener t = new TcpListener(IPAddress.Any, port);
                 t.Start(1);
                 while (timeout < Timeout * 4)
                 {

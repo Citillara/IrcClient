@@ -14,7 +14,6 @@ namespace Irc
     public class IrcClient
     {
         // Constants
-        private static readonly char[] CRLF = { '\r', '\n' };
         private static readonly char[] USERHOST_SIGNS = { '!', '@' };
         private static readonly char[] CTCP_SIGN = { (char)0x01, ' ' };
         private static readonly byte CR = 0x0D;
@@ -56,9 +55,6 @@ namespace Irc
         public delegate void IrcClientOnDisconnectEventHandler(IrcClient sender, bool wasManualDisconnect);
         public event IrcClientOnDisconnectEventHandler OnDisconnect;
 
-        public delegate void DebugEventHandler(int debug);
-        public event DebugEventHandler OnDebug;
-
         // Network manager
         private TcpClient myClient;
         private string myHost;
@@ -69,13 +65,12 @@ namespace Irc
         private StreamReader myReader;
         private Thread myListenerThread;
         private Thread myMessageManagerThread;
-        private Thread myPingerThread;
         private DateTime myStartTime;
         private bool usingIP = false;
         private ManualResetEvent idleListener;
 
-        public string Password = "";
-        private const string VersionString = "Citillara IRC Client library 0.3 - Check Github for support";
+        public string Password { get; set; }
+        private const string VersionString = "Citillara IRC Client library 201711080056 - Check Github for support";
 
         private bool manualDisconnect = false;
         private bool hasBeenDisconnected = false;
@@ -87,9 +82,7 @@ namespace Irc
 
         // Settings
         private string myNickname;
-        public MessageLevel LogLevel = MessageLevel.Debug;
-        public bool PingServer = false;
-        public int PingServerDelay = 45;
+        public MessageLevel LogLevel { get; set; }
 
         // Constructor
         public IrcClient(string host, int port, string nick)
@@ -109,10 +102,9 @@ namespace Irc
         public void Connect()
         {
             if (hasBeenDisconnected)
-                throw new Exception("Cannot reconnect after a disconnection. Create a new instance of the class");
+                throw new ObjectDisposedException("Cannot reconnect after a disconnection. Create a new instance of the class");
             try
             {
-                //IrcIdentServer.Start(myNickname, 30);
                 myClient = new TcpClient();
                 idleListener = new ManualResetEvent(false);
                 if (usingIP)
@@ -150,7 +142,7 @@ namespace Irc
             myStartTime = DateTime.Now;
             try
             {
-                if (Password != "")
+                if (string.IsNullOrEmpty(Password))
                 {
                     Pass(Password);
                 }
@@ -159,9 +151,6 @@ namespace Irc
                 int bufferCursor = 0;
                 int bufferCursorPrevious = bufferCursor;
                 byte[] buffer = new byte[BUFFER_SIZE];  // 16384
-                // .NET makes the job for us
-                //for (int k = 0; k < BUFFER_SIZE; k++)
-                //    buffer[k] = 0;
                 byte[] buff = new byte[1];
                 buff[0] = 0;
                 bool ok = false;
@@ -240,20 +229,13 @@ namespace Irc
             idleListener.Set();
             try
             {
-                if (myReader != null)
-                    myReader.Close();
-                if (myReader != null)
-                    myReader.Dispose();
-                if (myWriter != null)
-                    myWriter.Close();
-                if (myWriter != null)
-                    myWriter.Dispose();
-                if (myNetworkStream != null)
-                    myNetworkStream.Close();
-                if (myNetworkStream != null)
-                    myNetworkStream.Dispose();
-                if (myClient != null)
-                    myClient.Close();
+                if (myReader != null) { myReader.Close(); }
+                if (myReader != null) { myReader.Dispose(); }
+                if (myWriter != null) { myWriter.Close(); }
+                if (myWriter != null) { myWriter.Dispose(); }
+                if (myNetworkStream != null) { myNetworkStream.Close(); }
+                if (myNetworkStream != null) { myNetworkStream.Dispose(); }
+                if (myClient != null) { myClient.Close(); }
             }
             finally
             {
@@ -396,7 +378,6 @@ namespace Irc
                         RcvMode(_message);
                         break;
                     case "CAP": // Capabilities
-                        //System.Diagnostics.Debugger.Break();
                         break;
                     default : // Unknown command
                         if (OnUnknownCommand != null)
@@ -406,7 +387,7 @@ namespace Irc
             }
         }
 
-        private bool didPerformOnce = false;
+        private bool didPerformOnce;
         private void Perform()
         {
             if (!didPerformOnce)

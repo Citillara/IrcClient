@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -19,8 +20,8 @@ namespace Irc
          */
 
 
-        public string Prefix = string.Empty;
-        public string Command = string.Empty;
+        public string Prefix { get; set; }
+        public string Command { get; set; }
         public string[] Parameters = new string[]{ };
         public Dictionary<string, string> Tags = new Dictionary<string,string>();
 
@@ -76,7 +77,7 @@ namespace Irc
             // Grab the trailing if it is present. If a message contains
             // a space immediately following a colon, all characters after
             // the colon are the trailing part.
-            trailingStart = message.IndexOf(" :");
+            trailingStart = message.IndexOf(" :", StringComparison.InvariantCulture);
             if (trailingStart >= 0)
                 trailing = message.Substring(trailingStart + 2);
             else

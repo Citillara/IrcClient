@@ -29,12 +29,12 @@ namespace Irc
 
     public class IrcClientOnPrivateMessageEventArgs : EventArgs
     {
-        public string UserID;
-        public string Name;
-        public string Userhost;
-        public string Message;
-        public string Channel;
-        public bool IsToMe;
+        public string UserID { get; set; }
+        public string Name { get; set; }
+        public string Userhost { get; set; }
+        public string Message { get; set; }
+        public string Channel { get; set; }
+        public bool IsToMe { get; set; }
         public Dictionary<string, string> Tags;
         public IrcClientOnPrivateMessageEventArgs(string message, string name, string userid, string userhost,
             string channel, bool isToMe, Dictionary<string, string> tags)
@@ -55,11 +55,11 @@ namespace Irc
 
     public class IrcClientOnPartEventArgs : EventArgs
     {
-        public string UserID;
-        public string Name;
-        public string Userhost;
-        public string Channel;
-        public bool IsMyself;
+        public string UserID { get; set; }
+        public string Name { get; set; }
+        public string Userhost { get; set; }
+        public string Channel { get; set; }
+        public bool IsMyself { get; set; }
         public IrcClientOnPartEventArgs(string name, string userid, string userhost, string channel, bool isMyself)
         {
             UserID = userid;
@@ -75,11 +75,11 @@ namespace Irc
     }
     public class IrcClientOnQuitEventArgs : EventArgs
     {
-        public string UserID;
-        public string Name;
-        public string Userhost;
-        public string Channel;
-        public bool IsMyself;
+        public string UserID { get; set; }
+        public string Name { get; set; }
+        public string Userhost { get; set; }
+        public string Channel { get; set; }
+        public bool IsMyself { get; set; }
         public IrcClientOnQuitEventArgs(string name, string userid, string userhost, string channel, bool isMyself)
         {
             UserID = userid;
@@ -97,8 +97,8 @@ namespace Irc
 
     public class IrcClientOnChannelNickListReceivedEventArgs : EventArgs
     {
-        public string Channel;
-        public string[] NameList;
+        public string Channel { get; set; }
+        public string[] NameList { get; set; }
         public IrcClientOnChannelNickListReceivedEventArgs(string channel, string[] nameList)
         {
             Channel = channel;
@@ -112,12 +112,12 @@ namespace Irc
 
     public class IrcClientOnModeEventArgs : EventArgs
     {
-        public string UserID;
-        public string Name;
-        public string Userhost;
-        public string Channel;
-        public bool IsMyself;
-        public ModeChange[] ModeChanges;
+        public string UserID { get; set; }
+        public string Name { get; set; }
+        public string Userhost { get; set; }
+        public string Channel { get; set; }
+        public bool IsMyself { get; set; }
+        public ModeChange[] ModeChanges { get; set; }
 
         public IrcClientOnModeEventArgs(string userid, string name, string userhost, string channel, ModeChange[] modeChanges)
         {
