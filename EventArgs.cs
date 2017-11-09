@@ -8,11 +8,11 @@ namespace Irc
 {
     public class IrcClientOnJoinEventArgs : EventArgs
     {
-        public string UserID;
-        public string Name;
-        public string Userhost;
-        public string Channel;
-        public bool IsMyself;
+        public string UserID { get; set; }
+        public string Name { get; set; }
+        public string Userhost { get; set; }
+        public string Channel { get; set; }
+        public bool IsMyself { get; set; }
         public IrcClientOnJoinEventArgs(string name, string userid, string userhost, string channel, bool isMyself)
         {
             UserID = userid;
@@ -132,7 +132,7 @@ namespace Irc
 
     public class IrcClientOnLogEventArgs : EventArgs
     {
-        private string m_message;
+        private readonly string m_message;
         public string Message { get { return m_message; } }
         private MessageLevel m_level;
         public MessageLevel Level { get { return m_level; } }

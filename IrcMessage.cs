@@ -23,12 +23,13 @@ namespace Irc
         public string Prefix { get; set; }
         public string Command { get; set; }
         public string[] Parameters = new string[]{ };
-        public Dictionary<string, string> Tags = new Dictionary<string,string>();
+        public Dictionary<string, string> Tags { get; set; }
 
         public static readonly char[] TAG_SEPARATOR = new char[] { ';' };
 
         public IrcMessage(string message_)
         {
+            Tags = new Dictionary<string, string>();
             string message = message_;
             if (message.StartsWith("@")) // We have tags
             {
@@ -79,9 +80,13 @@ namespace Irc
             // the colon are the trailing part.
             trailingStart = message.IndexOf(" :", StringComparison.InvariantCulture);
             if (trailingStart >= 0)
+            {
                 trailing = message.Substring(trailingStart + 2);
+            }
             else
+            {
                 trailingStart = message.Length;
+            }
 
             // Use the prefix end position and trailing part start
             // position to extract the command and parameters.
@@ -93,12 +98,16 @@ namespace Irc
             // The rest of the elements are the parameters, if they exist.
             // Skip the first element because that is the command.
             if (commandAndParameters.Length > 1)
+            {
                 Parameters = commandAndParameters.Skip(1).ToArray();
+            }
 
             // If the trailing part is valid add the trailing part to the
             // end of the parameters.
             if (!String.IsNullOrEmpty(trailing))
+            {
                 Parameters = Parameters.Concat(new string[] { trailing }).ToArray();
+            }
         }
 
         /*

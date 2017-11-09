@@ -56,12 +56,12 @@ namespace Irc
         public event IrcClientOnDisconnectEventHandler OnDisconnect;
 
         // Network manager
-        private TcpClient myClient;
-        private string myHost;
-        private int myPort;
-        private IPAddress myIPAddress;
-        private NetworkStream myNetworkStream;
-        private StreamWriter myWriter;
+        private TcpClient m_Client;
+        private string m_Host;
+        private int m_Port;
+        private readonly IPAddress m_IPAddress;
+        private NetworkStream m_NetworkStream;
+        private StreamWriter m_Writer;
         private StreamReader myReader;
         private Thread myListenerThread;
         private Thread myMessageManagerThread;
@@ -88,13 +88,13 @@ namespace Irc
         public IrcClient(string host, int port, string nick)
         {
             myNickname = nick;
-            myHost = host;
-            myPort = port;
+            m_Host = host;
+            m_Port = port;
         }
         public IrcClient(IPAddress address, int port, string nick)
         {
-            myIPAddress = address;
-            myPort = port;
+            m_IPAddress = address;
+            m_Port = port;
             myNickname = nick;
             usingIP = true;
         }
@@ -105,22 +105,30 @@ namespace Irc
                 throw new ObjectDisposedException("Cannot reconnect after a disconnection. Create a new instance of the class");
             try
             {
-                myClient = new TcpClient();
+                m_Client = new TcpClient();
                 idleListener = new ManualResetEvent(false);
                 if (usingIP)
-                    myClient.Connect(myIPAddress, myPort);
+                {
+                    m_Client.Connect(m_IPAddress, m_Port);
+                }
                 else
-                    myClient.Connect(myHost, myPort);
+                {
+                    m_Client.Connect(m_Host, m_Port);
+                }
                 Log("IRC client connected", MessageLevel.Info);
-                myNetworkStream = myClient.GetStream();
-                myNetworkStream.ReadTimeout = 6 * 60 * 1000;
-                myWriter = new StreamWriter(myNetworkStream);
-                myReader = new StreamReader(myNetworkStream);
+                m_NetworkStream = m_Client.GetStream();
+                m_NetworkStream.ReadTimeout = 6 * 60 * 1000;
+                m_Writer = new StreamWriter(m_NetworkStream);
+                myReader = new StreamReader(m_NetworkStream);
                 Connected = true;
                 if (myMessageManagerThread != null)
+                {
                     myMessageManagerThread.Abort();
+                }
                 if (myListenerThread != null && myListenerThread.IsAlive)
+                {
                     myListenerThread.Abort();
+                }
                 myMessageManagerThread = new Thread(new ThreadStart(MessageManagerLoop));
                 myMessageManagerThread.Start();
                 myListenerThread = new Thread(new ThreadStart(ListenerLoop));
@@ -158,7 +166,7 @@ namespace Irc
                 {
                     do
                     {
-                        int read = myNetworkStream.Read(buffer, bufferCursor, 1);
+                        int read = m_NetworkStream.Read(buffer, bufferCursor, 1);
                         if (read == 0)
                         {
                             break;
@@ -186,7 +194,7 @@ namespace Irc
                                 bufferCursor++;
                             }
                         }
-                    } while (myNetworkStream.DataAvailable);
+                    } while (m_NetworkStream.DataAvailable);
 
                     // Either not recived everything yet or waiting for stuff later
                     if (bufferCursorPrevious != bufferCursor)
@@ -231,11 +239,11 @@ namespace Irc
             {
                 if (myReader != null) { myReader.Close(); }
                 if (myReader != null) { myReader.Dispose(); }
-                if (myWriter != null) { myWriter.Close(); }
-                if (myWriter != null) { myWriter.Dispose(); }
-                if (myNetworkStream != null) { myNetworkStream.Close(); }
-                if (myNetworkStream != null) { myNetworkStream.Dispose(); }
-                if (myClient != null) { myClient.Close(); }
+                if (m_Writer != null) { m_Writer.Close(); }
+                if (m_Writer != null) { m_Writer.Dispose(); }
+                if (m_NetworkStream != null) { m_NetworkStream.Close(); }
+                if (m_NetworkStream != null) { m_NetworkStream.Dispose(); }
+                if (m_Client != null) { m_Client.Close(); }
             }
             finally
             {
@@ -261,8 +269,8 @@ namespace Irc
                 try
                 {
                     Log(data, MessageLevel.Debug);
-                    myWriter.WriteLine(data);
-                    myWriter.Flush();
+                    m_Writer.WriteLine(data);
+                    m_Writer.Flush();
                 }
                 catch (Exception e)
                 {
@@ -381,7 +389,9 @@ namespace Irc
                         break;
                     default : // Unknown command
                         if (OnUnknownCommand != null)
+                        {
                             OnUnknownCommand(this, _message);
+                        }
                         break;
                 }
             }
@@ -512,7 +522,7 @@ namespace Irc
                         channelNickList.Add(message.Parameters[2], new List<string>());
                     }
                     channelNickList[message.Parameters[2]]
-                        .AddRange(message.Parameters[3].Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries));
+                        .AddRange(message.Parameters[3].Split(new char[]{' '}, StringSplitOptions.RemoveEmptyEntries));
                 }
             }
         }
@@ -577,7 +587,6 @@ namespace Irc
             {
                 ModeChange[] changes = new ModeChange[number_of_targets];
                 string modes = message.Parameters[1];
-                int modeslength = modes.Length;
                 bool adding = false;
                 int modecursor = 0;
                 foreach(char mode in modes)
@@ -671,18 +680,22 @@ namespace Irc
         }
 
 
-        public bool LogEnabled = true;
-        public bool LogToConsole = true;
-        public bool LogIncludeTimestamp = true;
+        private bool m_LogEnabled = true;
+        public bool LogEnabled { get { return m_LogEnabled; } set { m_LogEnabled = value; } }
+        private bool m_LogToConsole = true;
+        public bool LogToConsole { get { return m_LogToConsole; } set { m_LogToConsole = value; } }
+        private bool m_LogIncludeTimestamp = true;
+        public bool LogIncludeTimestamp { get { return m_LogIncludeTimestamp; } set { m_LogIncludeTimestamp = value; } }
+
         private void Log(string message, MessageLevel level)
         {
-            if (LogEnabled)
+            if (m_LogEnabled)
             {
                 if (level >= LogLevel)
                 {
-                    if (LogToConsole)
+                    if (m_LogToConsole)
                     {
-                        if (LogIncludeTimestamp)
+                        if (m_LogIncludeTimestamp)
                             Console.WriteLine(string.Concat("[", DateTime.Now.ToString(), "] ", message));
                         else
                             Console.WriteLine(message);
@@ -691,7 +704,7 @@ namespace Irc
                     {
                         if (OnLog != null)
                         {
-                            if(LogIncludeTimestamp)
+                            if (m_LogIncludeTimestamp)
                                 OnLog(this, new IrcClientOnLogEventArgs(string.Concat("[", DateTime.Now.ToString(), "] ", message), level));
                             else
                                 OnLog(this, new IrcClientOnLogEventArgs(message, level));
