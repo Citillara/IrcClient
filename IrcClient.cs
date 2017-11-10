@@ -150,7 +150,7 @@ namespace Irc
             myStartTime = DateTime.Now;
             try
             {
-                if (string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(Password))
                 {
                     Pass(Password);
                 }
