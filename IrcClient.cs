@@ -62,7 +62,7 @@ namespace Irc
         private readonly IPAddress m_IPAddress;
         private NetworkStream m_NetworkStream;
         private StreamWriter m_Writer;
-        private StreamReader myReader;
+        private StreamReader m_Reader;
         private Thread myListenerThread;
         private Thread myMessageManagerThread;
         private DateTime myStartTime;
@@ -119,7 +119,7 @@ namespace Irc
                 m_NetworkStream = m_Client.GetStream();
                 m_NetworkStream.ReadTimeout = 6 * 60 * 1000;
                 m_Writer = new StreamWriter(m_NetworkStream);
-                myReader = new StreamReader(m_NetworkStream);
+                m_Reader = new StreamReader(m_NetworkStream);
                 Connected = true;
                 if (myMessageManagerThread != null)
                 {
@@ -237,13 +237,13 @@ namespace Irc
             idleListener.Set();
             try
             {
-                if (myReader != null) { myReader.Close(); }
-                if (myReader != null) { myReader.Dispose(); }
-                if (m_Writer != null) { m_Writer.Close(); }
-                if (m_Writer != null) { m_Writer.Dispose(); }
-                if (m_NetworkStream != null) { m_NetworkStream.Close(); }
-                if (m_NetworkStream != null) { m_NetworkStream.Dispose(); }
                 if (m_Client != null) { m_Client.Close(); }
+                TryDispose(m_Reader);
+                TryDispose(m_Writer);
+                TryDispose(m_NetworkStream);
+            }
+            catch
+            {
             }
             finally
             {
@@ -261,7 +261,21 @@ namespace Irc
             this.Log(e.ToString(), MessageLevel.Critical);
             this.Close();
         }
-        
+
+        private void TryDispose(IDisposable disp)
+        {
+            try
+            {
+                if (disp != null)
+                {
+                    disp.Dispose();
+                }
+            }
+            catch
+            {
+            }
+        }
+
         public void SendLine(string data)
         {
             if (Connected)
