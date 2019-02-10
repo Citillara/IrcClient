@@ -83,6 +83,7 @@ namespace Irc
         // Settings
         private string myNickname;
         public MessageLevel LogLevel { get; set; }
+        public Encoding ServerEncoding { get; set; }
 
         // Constructor
         public IrcClient(string host, int port, string nick)
@@ -90,6 +91,8 @@ namespace Irc
             myNickname = nick;
             m_Host = host;
             m_Port = port;
+            ServerEncoding = Encoding.GetEncoding(1252);
+
         }
         public IrcClient(IPAddress address, int port, string nick)
         {
@@ -97,6 +100,7 @@ namespace Irc
             m_Port = port;
             myNickname = nick;
             usingIP = true;
+            ServerEncoding = Encoding.GetEncoding(1252);
         }
         
         public void Connect()
@@ -146,7 +150,6 @@ namespace Irc
         private void ListenerLoop()
         {
             Thread.CurrentThread.Name = "Irc Client Listener";
-            Encoding encoding = Encoding.GetEncoding(1252);
             myStartTime = DateTime.Now;
             try
             {
@@ -177,7 +180,7 @@ namespace Irc
                             ok = false;
                             // Then the message is complete let's give it to the processor
                             if (bufferCursor > 1)
-                                AddMessageToManager(encoding.GetString(buffer, 0, bufferCursor));
+                                AddMessageToManager(ServerEncoding.GetString(buffer, 0, bufferCursor));
                             bufferCursor = 0;
                         }
                         else
@@ -186,7 +189,7 @@ namespace Irc
                             if (bufferCursor >= BUFFER_SIZE - 1)
                             {
                                 // opps we're going for buffer overflow let's discard that
-                                Log("Overflow : " + encoding.GetString(buffer), MessageLevel.Warning);
+                                Log("Overflow : " + ServerEncoding.GetString(buffer), MessageLevel.Warning);
                                 bufferCursor = 0;
                             }
                             else
