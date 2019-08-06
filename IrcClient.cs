@@ -696,6 +696,12 @@ namespace Irc
             SendLine("CAP REQ :{0}", capacityRequested);
         }
 
+        public string GetIPConnected()
+        {
+            IPEndPoint ipep = (IPEndPoint)m_Client.Client.RemoteEndPoint;
+            IPAddress ipa = ipep.Address;
+            return ipa.ToString();
+        }
 
         private bool m_LogEnabled = true;
         public bool LogEnabled { get { return m_LogEnabled; } set { m_LogEnabled = value; } }
