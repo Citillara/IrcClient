@@ -63,32 +63,38 @@ namespace Irc
         private NetworkStream m_NetworkStream;
         private StreamWriter m_Writer;
         private StreamReader m_Reader;
-        private Thread myListenerThread;
-        private Thread myMessageManagerThread;
-        private DateTime myStartTime;
-        private bool usingIP = false;
-        private ManualResetEvent idleListener;
+        private Thread m_ListenerThread;
+        private Thread m_MessageManagerThread;
+        private DateTime m_startTime;
+        private bool m_usingIP = false;
+        private ManualResetEvent m_idleListener;
 
         public string Password { get; set; }
         private const string VersionString = "Citillara IRC Client library 201711080056 - Check Github for support";
 
-        private bool manualDisconnect = false;
-        private bool hasBeenDisconnected = false;
+        private bool m_manualDisconnect = false;
+        private bool m_hasBeenDisconnected = false;
 
         // Public get only variables
-        private bool Connected;
-        public bool IsConnected { get { return Connected; } }
-        public DateTime StartTime { get { return myStartTime; } }
+        private State m_status;
+        public State Status { get { return m_status; } }
+        public DateTime StartTime { get { return m_startTime; } }
 
         // Settings
-        private string myNickname;
+        private string m_nickname;
         public MessageLevel LogLevel { get; set; }
         public Encoding ServerEncoding { get; set; }
 
         // Constructor
+        private IrcClient()
+        {
+            m_status = State.NotStarted;
+        }
+
+
         public IrcClient(string host, int port, string nick)
         {
-            myNickname = nick;
+            m_nickname = nick;
             m_Host = host;
             m_Port = port;
             ServerEncoding = Encoding.GetEncoding(1252);
@@ -98,20 +104,26 @@ namespace Irc
         {
             m_IPAddress = address;
             m_Port = port;
-            myNickname = nick;
-            usingIP = true;
+            m_nickname = nick;
+            m_usingIP = true;
             ServerEncoding = Encoding.GetEncoding(1252);
+        }
+
+        public enum State
+        {
+            NotStarted, Connecting, Connected, Disconnected
         }
         
         public void Connect()
         {
-            if (hasBeenDisconnected)
+            if (m_hasBeenDisconnected)
                 throw new ObjectDisposedException("Cannot reconnect after a disconnection. Create a new instance of the class");
             try
             {
+                m_status = State.Connecting;
                 m_Client = new TcpClient();
-                idleListener = new ManualResetEvent(false);
-                if (usingIP)
+                m_idleListener = new ManualResetEvent(false);
+                if (m_usingIP)
                 {
                     m_Client.Connect(m_IPAddress, m_Port);
                 }
@@ -124,19 +136,19 @@ namespace Irc
                 m_NetworkStream.ReadTimeout = 6 * 60 * 1000;
                 m_Writer = new StreamWriter(m_NetworkStream);
                 m_Reader = new StreamReader(m_NetworkStream);
-                Connected = true;
-                if (myMessageManagerThread != null)
+                m_status = State.Connected;
+                if (m_MessageManagerThread != null)
                 {
-                    myMessageManagerThread.Abort();
+                    m_MessageManagerThread.Abort();
                 }
-                if (myListenerThread != null && myListenerThread.IsAlive)
+                if (m_ListenerThread != null && m_ListenerThread.IsAlive)
                 {
-                    myListenerThread.Abort();
+                    m_ListenerThread.Abort();
                 }
-                myMessageManagerThread = new Thread(new ThreadStart(MessageManagerLoop));
-                myMessageManagerThread.Start();
-                myListenerThread = new Thread(new ThreadStart(ListenerLoop));
-                myListenerThread.Start();
+                m_MessageManagerThread = new Thread(new ThreadStart(MessageManagerLoop));
+                m_MessageManagerThread.Start();
+                m_ListenerThread = new Thread(new ThreadStart(ListenerLoop));
+                m_ListenerThread.Start();
 
             }
             catch (Exception e)
@@ -150,22 +162,22 @@ namespace Irc
         private void ListenerLoop()
         {
             Thread.CurrentThread.Name = "Irc Client Listener";
-            myStartTime = DateTime.Now;
+            m_startTime = DateTime.Now;
             try
             {
                 if (!string.IsNullOrEmpty(Password))
                 {
                     Pass(Password);
                 }
-                User(myNickname, myNickname, myNickname, myNickname);
-                Nick(myNickname);
+                User(m_nickname, m_nickname, m_nickname, m_nickname);
+                Nick(m_nickname);
                 int bufferCursor = 0;
                 int bufferCursorPrevious = bufferCursor;
                 byte[] buffer = new byte[BUFFER_SIZE];  // 16384
                 byte[] buff = new byte[1];
                 buff[0] = 0;
                 bool ok = false;
-                while (Connected)
+                while (m_status == State.Connected)
                 {
                     do
                     {
@@ -206,7 +218,7 @@ namespace Irc
                     }
                     else
                     {
-                        idleListener.WaitOne(TIME_WAIT);
+                        m_idleListener.WaitOne(TIME_WAIT);
                     }
                 }
             }
@@ -230,14 +242,14 @@ namespace Irc
         /// </summary>
         public void Disconnect()
         {
-            manualDisconnect = true;
+            m_manualDisconnect = true;
             Close();
         }
 
         private void Close()
         {
-            Connected = false;
-            idleListener.Set();
+            m_status = State.Disconnected;
+            m_idleListener.Set();
             try
             {
                 if (m_Client != null) { m_Client.Close(); }
@@ -251,12 +263,12 @@ namespace Irc
             finally
             {
                 this.Log("IRC client closing", MessageLevel.Info);
-                if (this.OnDisconnect != null && !hasBeenDisconnected)
+                if (this.OnDisconnect != null && !m_hasBeenDisconnected)
                 {
-                    hasBeenDisconnected = true;
-                    OnDisconnect(this, manualDisconnect);
+                    m_hasBeenDisconnected = true;
+                    OnDisconnect(this, m_manualDisconnect);
                 }
-                hasBeenDisconnected = true;
+                m_hasBeenDisconnected = true;
             }
         }
         private void ExceptionState(Exception e)
@@ -281,7 +293,7 @@ namespace Irc
 
         public void SendLine(string data)
         {
-            if (Connected)
+            if (m_status == State.Connected)
             {
                 try
                 {
@@ -325,7 +337,7 @@ namespace Irc
 
             Thread.CurrentThread.Name = "Irc Client Message Manager";
             int messageQueueCount = 0;
-            while (Connected)
+            while (m_status == State.Connected)
             {
                 messageQueueCount = myMessageQueue.Count;
                 if (messageQueueCount > 0)
@@ -339,7 +351,7 @@ namespace Irc
                 }
                 else
                 {
-                    idleListener.WaitOne(TIME_WAIT);
+                    m_idleListener.WaitOne(TIME_WAIT);
                 }
             }
         }
@@ -448,7 +460,7 @@ namespace Irc
                 if (split.Length > 2)
                     userhost = split[2];
 
-                bool isforme = (channel.ToLowerInvariant() == myNickname.ToLowerInvariant());
+                bool isforme = (channel.ToLowerInvariant() == m_nickname.ToLowerInvariant());
 
 
                 if (OnPrivateMessage != null)
@@ -477,7 +489,7 @@ namespace Irc
                 if (split.Length > 2)
                     userhost = split[2];
 
-                bool isforme = (nick.ToLowerInvariant() == myNickname.ToLowerInvariant());
+                bool isforme = (nick.ToLowerInvariant() == m_nickname.ToLowerInvariant());
 
                 OnJoin(this, new IrcClientOnJoinEventArgs(nick, userid, userhost, channel, isforme));
             }
@@ -496,7 +508,7 @@ namespace Irc
                 if (split.Length > 2)
                     userhost = split[2];
 
-                bool isforme = (nick.ToLowerInvariant() == myNickname.ToLowerInvariant());
+                bool isforme = (nick.ToLowerInvariant() == m_nickname.ToLowerInvariant());
 
                 OnPart(this, new IrcClientOnPartEventArgs(nick, userid, userhost, channel, isforme));
             }
