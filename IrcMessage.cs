@@ -120,7 +120,7 @@ namespace Irc
          * all others       the character itself
          */
 
-        public string UnescapeTag(string tag)
+        public static string UnescapeTag(string tag)
         {
             return tag
                 .Replace(@"\:", ";")
