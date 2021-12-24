@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8618
+using System;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -59,6 +60,7 @@ namespace Irc
         private TcpClient m_Client;
         private string m_Host;
         private int m_Port;
+        private bool m_useTls;
         private readonly IPAddress m_IPAddress;
         private NetworkStream m_NetworkStream;
         private StreamWriter m_Writer;
@@ -89,24 +91,24 @@ namespace Irc
         private IrcClient()
         {
             m_status = State.NotStarted;
+            ServerEncoding = Encoding.GetEncoding(1252);
         }
 
 
-        public IrcClient(string host, int port, string nick)
+        public IrcClient(string host, int port, string nick, bool useTls = false) : base()
         {
             m_nickname = nick;
             m_Host = host;
             m_Port = port;
-            ServerEncoding = Encoding.GetEncoding(1252);
-
+            m_useTls = useTls;
         }
-        public IrcClient(IPAddress address, int port, string nick)
+        public IrcClient(IPAddress address, int port, string nick, bool useTls = false) : base()
         {
             m_IPAddress = address;
             m_Port = port;
             m_nickname = nick;
             m_usingIP = true;
-            ServerEncoding = Encoding.GetEncoding(1252);
+            m_useTls = useTls;
         }
 
         public enum State
@@ -139,11 +141,19 @@ namespace Irc
                 m_status = State.Connected;
                 if (m_MessageManagerThread != null)
                 {
+#if NET
+                    m_MessageManagerThread.Interrupt();
+#else
                     m_MessageManagerThread.Abort();
+#endif
                 }
                 if (m_ListenerThread != null && m_ListenerThread.IsAlive)
                 {
+#if NET
+                    m_ListenerThread.Interrupt();
+#else
                     m_ListenerThread.Abort();
+#endif
                 }
                 m_MessageManagerThread = new Thread(new ThreadStart(MessageManagerLoop));
                 m_MessageManagerThread.Start();
