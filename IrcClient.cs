@@ -8,7 +8,7 @@ using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Globalization;
-
+using System.Net.Security;
 
 namespace Irc
 {
@@ -62,7 +62,7 @@ namespace Irc
         private int m_Port;
         private bool m_useTls;
         private readonly IPAddress m_IPAddress;
-        private NetworkStream m_NetworkStream;
+        private Stream m_NetworkStream;
         private StreamWriter m_Writer;
         private StreamReader m_Reader;
         private Thread m_ListenerThread;
@@ -97,6 +97,8 @@ namespace Irc
 
         public IrcClient(string host, int port, string nick, bool useTls = false) : base()
         {
+            m_status = State.NotStarted;
+            ServerEncoding = Encoding.GetEncoding(1252);
             m_nickname = nick;
             m_Host = host;
             m_Port = port;
@@ -104,6 +106,8 @@ namespace Irc
         }
         public IrcClient(IPAddress address, int port, string nick, bool useTls = false) : base()
         {
+            m_status = State.NotStarted;
+            ServerEncoding = Encoding.GetEncoding(1252);
             m_IPAddress = address;
             m_Port = port;
             m_nickname = nick;
@@ -134,7 +138,26 @@ namespace Irc
                     m_Client.Connect(m_Host, m_Port);
                 }
                 Log("IRC client connected", MessageLevel.Info);
-                m_NetworkStream = m_Client.GetStream();
+                SslStream sslStream = null;
+                if (m_useTls)
+                {
+                    sslStream = new SslStream(m_Client.GetStream());
+                    if (!m_usingIP)
+                    {
+                        sslStream.AuthenticateAsClient(m_Host);
+                    }
+                    else
+                    {
+                        sslStream.AuthenticateAsClient(m_IPAddress.ToString(), null, false);
+                    }
+                    
+
+                    m_NetworkStream = (Stream)sslStream;
+                }
+                else
+                {
+                    m_NetworkStream = (Stream)m_Client.GetStream();
+                }
                 m_NetworkStream.ReadTimeout = 6 * 60 * 1000;
                 m_Writer = new StreamWriter(m_NetworkStream);
                 m_Reader = new StreamReader(m_NetworkStream);
@@ -184,8 +207,6 @@ namespace Irc
                 int bufferCursor = 0;
                 int bufferCursorPrevious = bufferCursor;
                 byte[] buffer = new byte[BUFFER_SIZE];  // 16384
-                byte[] buff = new byte[1];
-                buff[0] = 0;
                 bool ok = false;
                 while (m_status == State.Connected)
                 {
@@ -219,7 +240,7 @@ namespace Irc
                                 bufferCursor++;
                             }
                         }
-                    } while (m_NetworkStream.DataAvailable);
+                    } while (m_NetworkStream.CanRead);
 
                     // Either not recived everything yet or waiting for stuff later
                     if (bufferCursorPrevious != bufferCursor)
