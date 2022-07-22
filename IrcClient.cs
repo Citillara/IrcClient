@@ -12,6 +12,9 @@ using System.Net.Security;
 
 namespace Irc
 {
+    /// <summary>
+    /// Lightweight IRC Client
+    /// </summary>
     public class IrcClient
     {
         // Constants
@@ -21,17 +24,45 @@ namespace Irc
         private static readonly byte LF = 0x0A;
         private static readonly int BUFFER_SIZE = 16384;
         private static readonly int TIME_WAIT = 200; // Threads waiting time when no work is due
-        public static readonly string Version = "3";
         
         // Events
+        /// <summary>
+        /// Delegate for the OnPrivateMessage event
+        /// </summary>
+        /// <param name="sender">IrcClient sending the event</param>
+        /// <param name="args">Parsed IRC message received</param>
         public delegate void IrcClientOnPrivateMessageEventHandler(IrcClient sender, IrcClientOnPrivateMessageEventArgs args);
+        /// <summary>
+        /// Event fired everytime a PRIVMSG is received
+        /// </summary>
         public event IrcClientOnPrivateMessageEventHandler OnPrivateMessage;
+        /// <summary>
+        /// Delegate for the Perform event
+        /// </summary>
+        /// <param name="sender">IrcClient sending the event</param>
         public delegate void IrcClientPerformEventHandler(IrcClient sender);
+        /// <summary>
+        /// Event sent when it is "safe" to send commands to the server. Currently set to be sent after MOTD (Commands 376 and 422)
+        /// </summary>
         public event IrcClientPerformEventHandler OnPerform;
 
+        /// <summary>
+        /// Delefate for the OnLog event
+        /// </summary>
+        /// <param name="sender">IrcClient sending the event</param>
+        /// <param name="args">Log message</param>
         public delegate void IrcClientOnLogEventHandler(IrcClient sender, IrcClientOnLogEventArgs args);
+        /// <summary>
+        /// Event sent on every actions of the client that are related to it's life cycle (connection, crashes, network). 
+        /// The verbosity of the event is set by the LogLevel property.
+        /// </summary>
         public event IrcClientOnLogEventHandler OnLog;
 
+        /// <summary>
+        /// Delegate for OnNotice event
+        /// </summary>
+        /// <param name="sender">IrcClient sending the event</param>
+        /// <param name="args">IRC message received</param>
         public delegate void IrcClientOnNoticeEventHandler(IrcClient sender, IrcMessage args);
         public event IrcClientOnNoticeEventHandler OnNotice;
 
