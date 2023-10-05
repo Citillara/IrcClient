@@ -239,6 +239,7 @@ namespace Irc
                 int bufferCursorPrevious = bufferCursor;
                 byte[] buffer = new byte[BUFFER_SIZE];  // 16384
                 bool ok = false;
+                bool discardNext = false;
                 while (m_status == State.Connected)
                 {
                     do
@@ -253,9 +254,10 @@ namespace Irc
                         {
                             ok = false;
                             // Then the message is complete let's give it to the processor
-                            if (bufferCursor > 1)
+                            if (bufferCursor > 1 && !discardNext)
                                 AddMessageToManager(ServerEncoding.GetString(buffer, 0, bufferCursor));
                             bufferCursor = 0;
+                            discardNext = false;
                         }
                         else
                         {
@@ -265,6 +267,7 @@ namespace Irc
                                 // opps we're going for buffer overflow let's discard that
                                 Log("Overflow : " + ServerEncoding.GetString(buffer), MessageLevel.Warning);
                                 bufferCursor = 0;
+                                discardNext = true;
                             }
                             else
                             {
